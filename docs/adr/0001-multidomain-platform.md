@@ -45,6 +45,13 @@ Concretely:
 5. Abstractions are extracted from working code in the first domain. They
    are not designed in advance for a hypothetical second one.
 
+Point 4 is not speculative: a one-hour census of the Wikimedia
+`recentchange` stream on 2026-09-21 measured `wikidatawiki` at 6.3% of
+events (8,479 of ~134,700), against 38.7% for `commonswiki` and 8.8% for
+`enwiki`. Partitioning raw data by domain at write time would have buried
+that slice under `culture`, even though it is the shared identifier stream
+the Phase 4 conformed dimensions are meant to key off.
+
 Points 1 to 4 are cheap to hold from day one and expensive to retrofit.
 Point 5 is what keeps this decision from becoming speculative generality:
 the boundary is enforced now, the generalisation is earned later.
