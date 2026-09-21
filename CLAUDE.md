@@ -6,11 +6,14 @@ Multi-domain data platform. Bootstrap domain: cultural heritage.
 
 - The core (`src/aforo/`) is domain-agnostic. It must never
   reference a specific domain, provider or dataset. No `culture`,
-  `museum`, `europeana` or `wikimedia` anywhere under `src/aforo/`.
+  `museum`, `europeana`, `wikimedia` or `wikidata` anywhere under
+  `src/aforo/`.
 - Dependencies point one way: `domains/` imports from the core,
   never the reverse.
-- Raw data is partitioned by domain and provider, and is never
-  modified after it lands.
+- Raw data is partitioned by provider and dataset from the first
+  write, and is never modified after it lands. Domains own what is
+  derived from raw data, not the raw data itself: a single provider
+  can feed more than one domain.
 - Ingestion contracts are defined independently of any concrete source.
 
 ## Conventions

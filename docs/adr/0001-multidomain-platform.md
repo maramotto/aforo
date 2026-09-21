@@ -1,17 +1,18 @@
 # 0001 — Multi-domain by design, single domain at launch
 
 - **Status:** Accepted
-- **Date:** 2026-10-05
+- **Date:** 2026-09-21
+- **Phase:** F0
 - **Deciders:** Mara
 
 ## Context
 
 Aforo ingests data from sources that behave very differently. The bootstrap
-domain is cultural heritage: a real-time stream of attention (Wikimedia
-EventStreams) joined against slow, heterogeneous catalogues (Europeana, the
-Met, the Rijksmuseum). A second domain — likely public transit — is under
-consideration for mid-2027, but that decision has not been made and may not
-be made at all.
+domain is cultural heritage: a real-time stream of editorial activity
+(Wikimedia EventStreams) joined against slow, heterogeneous catalogues
+(Europeana, the Met, the Rijksmuseum). A second domain — likely public
+transit — is under consideration for mid-2027, but that decision has not
+been made and may not be made at all.
 
 The obvious move for a project with one domain is to build for that domain
 and generalise later. That is also how most single-purpose platforms end up
@@ -30,15 +31,17 @@ The platform is multi-domain **by boundary**, not by abstraction.
 Concretely:
 
 1. The core package (`src/aforo/`) never names a domain, a provider or a
-   dataset. No `culture`, `museum`, `europeana` or `wikimedia` appears
-   anywhere inside it.
+   dataset. No `culture`, `museum`, `europeana`, `wikimedia` or `wikidata`
+   appears anywhere inside it.
 2. Dependencies point one way. `domains/` imports from the core; the core
    has no knowledge that `domains/` exists.
 3. Ingestion contracts are defined independently of any concrete source. A
    source adapter satisfies a contract; the contract does not describe the
    source.
-4. Raw data is partitioned by domain and provider from the first write, and
-   is never modified after it lands.
+4. Raw data is partitioned by provider and dataset from the first write, and
+   is never modified after it lands. Domains own what is derived from raw
+   data, not the raw data itself: a single provider can feed more than one
+   domain.
 5. Abstractions are extracted from working code in the first domain. They
    are not designed in advance for a hypothetical second one.
 
@@ -70,8 +73,11 @@ the boundary is enforced now, the generalisation is earned later.
 
 **Enforcement**
 
-A test in CI fails if any domain term appears under `src/aforo/`. A rule
-that only lives in a document is a rule that stops being true.
+A grep-based check over `src/aforo/` for domain terms (`culture`, `museum`,
+`europeana`, `wikimedia`, `wikidata`) will be added to CI when the first
+file lands under `src/aforo/`, in week 2. Until then this rule lives only
+in this document and in `CLAUDE.md`; both must be kept in sync, or the rule
+stops being true.
 
 ## Alternatives considered
 
