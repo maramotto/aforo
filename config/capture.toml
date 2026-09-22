@@ -1,0 +1,9 @@
+# config/capture.toml
+[source]
+url = "https://stream.wikimedia.org/v2/stream/recentchange"
+output_prefix = "raw/wikimedia/recentchange"
+
+# Everything is kept. Each rule drops matching events.
+[[filter.drop]]
+field = "meta.domain"
+equals = "canary"
