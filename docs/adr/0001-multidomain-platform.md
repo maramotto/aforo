@@ -1,7 +1,7 @@
 # 0001 — Multi-domain by design, single domain at launch
 
 - **Status:** Accepted
-- **Date:** 2026-09-21
+- **Date:** 2026-09-22
 - **Phase:** F0
 - **Deciders:** Mara
 
@@ -30,14 +30,16 @@ The platform is multi-domain **by boundary**, not by abstraction.
 
 Concretely:
 
-1. The core package (`src/aforo/`) never names a domain, a provider or a
-   dataset. No `culture`, `museum`, `europeana`, `wikimedia` or `wikidata`
+1. The core package (`src/aforo/core/`) never names a domain, a provider or
+   a dataset. No `culture`, `museum`, `europeana`, `wikimedia` or `wikidata`
    appears anywhere inside it.
 2. Dependencies point one way. `domains/` imports from the core; the core
    has no knowledge that `domains/` exists.
 3. Ingestion contracts are defined independently of any concrete source. A
    source adapter satisfies a contract; the contract does not describe the
-   source.
+   source. A source that needs no logic of its own gets no code of its own:
+   it is described entirely in configuration (endpoint, raw output prefix,
+   filter rules) and run by a generic engine in the core.
 4. Raw data is partitioned by provider and dataset from the first write, and
    is never modified after it lands. Domains own what is derived from raw
    data, not the raw data itself: a single provider can feed more than one
@@ -52,6 +54,14 @@ events (8,479 of ~134,700), against 38.7% for `commonswiki` and 8.8% for
 that slice under `culture`, even though it is the shared identifier stream
 the Phase 4 conformed dimensions are meant to key off.
 
+Point 3 applies from the first capture. The Wikimedia `recentchange` stream
+is read by a generic SSE-to-NDJSON engine in `src/aforo/core/` that handles
+reconnection, resumption, hourly rotation and compression, and knows nothing
+about wikis. Everything specific to Wikimedia lives in `config/capture.toml`:
+the endpoint, the raw prefix (`raw/wikimedia/recentchange`) and the drop
+rules, starting with Wikimedia's canary events. Filtering is expressed as
+rules on event fields, never as a list of entities.
+
 Points 1 to 4 are cheap to hold from day one and expensive to retrofit.
 Point 5 is what keeps this decision from becoming speculative generality:
 the boundary is enforced now, the generalisation is earned later.
@@ -62,6 +72,8 @@ the boundary is enforced now, the generalisation is earned later.
 
 - Adding a second domain is an additive change: a new directory under
   `domains/`, new adapters, no edits to the core.
+- Changing what is captured (excluding a wiki, dropping bot edits) is a
+  configuration change and a service restart, not a code change.
 - Storage layout, naming and contracts stay readable to someone who does not
   know the cultural heritage domain.
 - The constraint surfaces bad abstractions early. Anything that cannot be
@@ -80,11 +92,11 @@ the boundary is enforced now, the generalisation is earned later.
 
 **Enforcement**
 
-A grep-based check over `src/aforo/` for domain terms (`culture`, `museum`,
-`europeana`, `wikimedia`, `wikidata`) will be added to CI when the first
-file lands under `src/aforo/`, in week 2. Until then this rule lives only
-in this document and in `CLAUDE.md`; both must be kept in sync, or the rule
-stops being true.
+A grep-based check over `src/aforo/core/` for domain and provider terms
+(`culture`, `museum`, `europeana`, `wikimedia`, `wikidata`) will be added to
+CI when the first file lands under `src/aforo/core/`, in week 2. Until then
+this rule lives only in this document and in `CLAUDE.md`; both must be kept
+in sync, or the rule stops being true.
 
 ## Alternatives considered
 
@@ -98,6 +110,13 @@ it.
 separation, but it forces the library to be versioned and released before
 there is anything to share, and it splits the operational story across repos
 for no gain at this size.
+
+**A `providers/` layer beside `core/` and `domains/`.** More explicit about
+where source-specific code lives, but today it would hold a single endpoint
+and one drop rule, both of which fit in configuration. Deferred, not
+rejected: it is reconsidered when a provider arrives with logic that
+configuration cannot express, most likely the Rijksmuseum OAI-PMH adapter
+in Phase 1.
 
 **Plugin architecture with runtime domain discovery.** Solves a problem this
 project does not have. Two domains do not justify a plugin system, and the
